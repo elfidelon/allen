@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foto VR 360</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.5.0/aframe.min.js"></script>
+  <style>html,body{margin:0;height:100%;overflow:hidden;background:#000}</style>
+</head>
+<body>
+  <a-scene>
+    <a-assets>
+      <img id="pano" src="exr.jpg" crossorigin="anonymous">
+    </a-assets>
+
+    <!-- Foto panorámica envolvente -->
+    <a-sky src="#pano" rotation="0 -90 0"></a-sky>
+
+    <!-- Cámara: arrastra con el mouse / gira el teléfono -->
+    <a-camera wasd-controls-enabled="false" look-controls="reverseMouseDrag: true"></a-camera>
+  </a-scene>
+</body>
+</html>
