@@ -22,8 +22,9 @@
   <script>
     var viewer = pannellum.viewer('pano', {
       type: 'equirectangular',
-      panorama: 'exr.jpg',
+      panorama: 'exr_4k_fixed.jpg',
       autoLoad: true,
+      crossOrigin: 'anonymous',
 
       // movimiento suave con inercia (como krpano)
       dynamic: false,
@@ -54,6 +55,12 @@
     // Doble clic / doble toque = acercar hacia donde apuntas
     document.getElementById('pano').addEventListener('dblclick', function () {
       viewer.setHfov(Math.max(viewer.getHfov() - 25, 50), 800);
+    });
+
+    // Aviso claro si la imagen no carga
+    viewer.on('error', function (e) {
+      document.getElementById('pano').innerHTML =
+        '<div style="color:#fff;padding:24px;font-size:15px">No se pudo cargar el panorama: ' + e + '</div>';
     });
   </script>
 </body>
