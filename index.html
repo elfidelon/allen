@@ -3,87 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Foto VR 360</title>
-  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <title>Tour 360</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.js"></script>
   <style>
     html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,sans-serif}
-    #gyro-btn{
-      position:fixed;z-index:9999;left:50%;bottom:24px;transform:translateX(-50%);
-      padding:14px 22px;border:0;border-radius:999px;background:#fff;color:#111;
-      font-size:16px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4);cursor:pointer
-    }
-    #gyro-btn.hidden{display:none}
-    #hint{
-      position:fixed;z-index:9998;left:0;right:0;top:16px;text-align:center;
-      color:#fff;opacity:.75;font-size:14px;pointer-events:none;transition:opacity .5s
-    }
+    #pano{width:100%;height:100%}
+    /* look & feel tipo krpano */
+    .pnlm-load-box{background:#000!important;border-radius:0!important}
+    .pnlm-controls{border-color:rgba(255,255,255,.4)!important}
+    .pnlm-control{background:rgba(0,0,0,.55)!important}
+    .pnlm-compass{filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
   </style>
 </head>
 <body>
-  <div id="hint">Mueve el celular para mirar alrededor · arrastra con el dedo/mouse</div>
-  <button id="gyro-btn" class="hidden">Activar movimiento del celular</button>
-
-  <a-scene renderer="antialias: true; colorManagement: true">
-    <a-assets>
-      <img id="pano" src="exr.jpg" crossorigin="anonymous">
-    </a-assets>
-
-    <a-sky src="#pano" rotation="0 -90 0"></a-sky>
-
-    <a-camera
-      wasd-controls-enabled="false"
-      look-controls="reverseMouseDrag: true; magicWindowTrackingEnabled: true; touchEnabled: true">
-    </a-camera>
-  </a-scene>
+  <div id="pano"></div>
 
   <script>
-    const btn  = document.getElementById('gyro-btn');
-    const hint = document.getElementById('hint');
-    const scene = document.querySelector('a-scene');
+    var viewer = pannellum.viewer('pano', {
+      type: 'equirectangular',
+      panorama: 'exr.jpg',
+      autoLoad: true,
 
-    // Oculta el texto de ayuda después de unos segundos
-    setTimeout(() => { hint.style.opacity = '0'; }, 5000);
+      // movimiento suave con inercia (como krpano)
+      dynamic: false,
+      friction: 0.15,
+      mouseZoom: true,
+      draggable: true,
+      keyboardZoom: true,
 
-    // Reaplica el tracking del giroscopio a look-controls
-    function enableGyro() {
-      const cam = document.querySelector('a-camera');
-      if (cam && cam.components['look-controls']) {
-        cam.setAttribute('look-controls', 'magicWindowTrackingEnabled', true);
-      }
-      btn.classList.add('hidden');
-    }
+      // rotación automática lenta que se detiene al tocar y vuelve sola
+      autoRotate: -2,
+      autoRotateInactivityDelay: 3000,
 
-    // iOS 13+ exige pedir permiso con un gesto del usuario
-    const needsPermission =
-      typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function';
+      // campo de visión / límites de zoom
+      hfov: 110,
+      minHfov: 50,
+      maxHfov: 120,
+      pitch: 0,
+      yaw: 0,
 
-    function hasGyro() {
-      return 'DeviceOrientationEvent' in window;
-    }
+      // extras
+      compass: true,
+      showZoomCtrl: true,
+      showFullscreenCtrl: true,
+      orientationOnByDefault: false,   // el usuario activa el giroscopio con el botón
+      hotSpotDebug: false
+    });
 
-    if (hasGyro() && needsPermission) {
-      btn.classList.remove('hidden');
-      btn.addEventListener('click', async () => {
-        try {
-          const res = await DeviceOrientationEvent.requestPermission();
-          if (res === 'granted') enableGyro();
-          else { btn.textContent = 'Permiso denegado'; }
-        } catch (e) {
-          btn.textContent = 'No disponible';
-        }
-      });
-    } else if (hasGyro()) {
-      // Android / navegadores que no piden permiso: ya funciona solo
-      enableGyro();
-    } else {
-      hint.textContent = 'Arrastra con el mouse para mirar alrededor';
-    }
-
-    // Log útil si la imagen no carga (típico al abrir con file://)
-    document.getElementById('pano').addEventListener('error', () => {
-      hint.style.opacity = '1';
-      hint.textContent = 'No se pudo cargar exr.jpg — ábrela con un servidor local (Live Server)';
+    // Doble clic / doble toque = acercar hacia donde apuntas
+    document.getElementById('pano').addEventListener('dblclick', function () {
+      viewer.setHfov(Math.max(viewer.getHfov() - 25, 50), 800);
     });
   </script>
 </body>
