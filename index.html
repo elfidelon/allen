@@ -2,22 +2,89 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Foto VR 360</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.5.0/aframe.min.js"></script>
-  <style>html,body{margin:0;height:100%;overflow:hidden;background:#000}</style>
+  <style>
+    html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,sans-serif}
+    #gyro-btn{
+      position:fixed;z-index:9999;left:50%;bottom:24px;transform:translateX(-50%);
+      padding:14px 22px;border:0;border-radius:999px;background:#fff;color:#111;
+      font-size:16px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4);cursor:pointer
+    }
+    #gyro-btn.hidden{display:none}
+    #hint{
+      position:fixed;z-index:9998;left:0;right:0;top:16px;text-align:center;
+      color:#fff;opacity:.75;font-size:14px;pointer-events:none;transition:opacity .5s
+    }
+  </style>
 </head>
 <body>
-  <a-scene>
+  <div id="hint">Mueve el celular para mirar alrededor · arrastra con el dedo/mouse</div>
+  <button id="gyro-btn" class="hidden">Activar movimiento del celular</button>
+
+  <a-scene renderer="antialias: true; colorManagement: true">
     <a-assets>
       <img id="pano" src="exr.jpg" crossorigin="anonymous">
     </a-assets>
 
-    <!-- Foto panorámica envolvente -->
     <a-sky src="#pano" rotation="0 -90 0"></a-sky>
 
-    <!-- Cámara: arrastra con el mouse / gira el teléfono -->
-    <a-camera wasd-controls-enabled="false" look-controls="reverseMouseDrag: true"></a-camera>
+    <a-camera
+      wasd-controls-enabled="false"
+      look-controls="reverseMouseDrag: true; magicWindowTrackingEnabled: true; touchEnabled: true">
+    </a-camera>
   </a-scene>
+
+  <script>
+    const btn  = document.getElementById('gyro-btn');
+    const hint = document.getElementById('hint');
+    const scene = document.querySelector('a-scene');
+
+    // Oculta el texto de ayuda después de unos segundos
+    setTimeout(() => { hint.style.opacity = '0'; }, 5000);
+
+    // Reaplica el tracking del giroscopio a look-controls
+    function enableGyro() {
+      const cam = document.querySelector('a-camera');
+      if (cam && cam.components['look-controls']) {
+        cam.setAttribute('look-controls', 'magicWindowTrackingEnabled', true);
+      }
+      btn.classList.add('hidden');
+    }
+
+    // iOS 13+ exige pedir permiso con un gesto del usuario
+    const needsPermission =
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function';
+
+    function hasGyro() {
+      return 'DeviceOrientationEvent' in window;
+    }
+
+    if (hasGyro() && needsPermission) {
+      btn.classList.remove('hidden');
+      btn.addEventListener('click', async () => {
+        try {
+          const res = await DeviceOrientationEvent.requestPermission();
+          if (res === 'granted') enableGyro();
+          else { btn.textContent = 'Permiso denegado'; }
+        } catch (e) {
+          btn.textContent = 'No disponible';
+        }
+      });
+    } else if (hasGyro()) {
+      // Android / navegadores que no piden permiso: ya funciona solo
+      enableGyro();
+    } else {
+      hint.textContent = 'Arrastra con el mouse para mirar alrededor';
+    }
+
+    // Log útil si la imagen no carga (típico al abrir con file://)
+    document.getElementById('pano').addEventListener('error', () => {
+      hint.style.opacity = '1';
+      hint.textContent = 'No se pudo cargar exr.jpg — ábrela con un servidor local (Live Server)';
+    });
+  </script>
 </body>
 </html>
