@@ -3,64 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tour 360</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.js"></script>
+  <title>Tour 360 VR</title>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <style>
     html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,sans-serif}
-    #pano{width:100%;height:100%}
-    /* look & feel tipo krpano */
-    .pnlm-load-box{background:#000!important;border-radius:0!important}
-    .pnlm-controls{border-color:rgba(255,255,255,.4)!important}
-    .pnlm-control{background:rgba(0,0,0,.55)!important}
-    .pnlm-compass{filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+    #hint{
+      position:fixed;z-index:10;left:0;right:0;top:14px;text-align:center;color:#fff;
+      opacity:.8;font-size:14px;pointer-events:none;transition:opacity .6s;
+      text-shadow:0 1px 4px rgba(0,0,0,.8)
+    }
   </style>
 </head>
 <body>
-  <div id="pano"></div>
+  <div id="hint">Arrastra para mirar · botón VR abajo a la derecha para gafas Meta Quest</div>
+
+  <a-scene
+    renderer="antialias: true; colorManagement: true; exposure: 1"
+    vr-mode-ui="enabled: true"
+    background="color: #000"
+    loading-screen="dotsColor: white; backgroundColor: black">
+
+    <a-assets>
+      <img id="pano" src="tallerres.png" crossorigin="anonymous">
+    </a-assets>
+
+    <!-- Entorno 360 envolvente -->
+    <a-sky src="#pano" rotation="0 -90 0"></a-sky>
+
+    <!-- Cámara: mouse en desktop, giroscopio en móvil, headtracking en VR -->
+    <a-entity id="rig" position="0 1.6 0">
+      <a-camera
+        wasd-controls-enabled="false"
+        look-controls="reverseMouseDrag: true; magicWindowTrackingEnabled: true; touchEnabled: true; pointerLockEnabled: false">
+      </a-camera>
+    </a-entity>
+  </a-scene>
 
   <script>
-    var viewer = pannellum.viewer('pano', {
-      type: 'equirectangular',
-      panorama: 'tallerres.png',
-      autoLoad: true,
-      crossOrigin: 'anonymous',
+    var hint = document.getElementById('hint');
+    setTimeout(function(){ hint.style.opacity = '0'; }, 6000);
 
-      // movimiento suave con inercia (como krpano)
-      dynamic: false,
-      friction: 0.15,
-      mouseZoom: true,
-      draggable: true,
-      keyboardZoom: true,
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      var once = function () {
+        DeviceOrientationEvent.requestPermission().catch(function(){});
+        window.removeEventListener('touchend', once);
+      };
+      window.addEventListener('touchend', once);
+    }
 
-      // rotación automática lenta que se detiene al tocar y vuelve sola
-      autoRotate: -2,
-      autoRotateInactivityDelay: 3000,
-
-      // campo de visión / límites de zoom
-      hfov: 110,
-      minHfov: 50,
-      maxHfov: 120,
-      pitch: 0,
-      yaw: 0,
-
-      // extras
-      compass: true,
-      showZoomCtrl: true,
-      showFullscreenCtrl: true,
-      orientationOnByDefault: false,   // el usuario activa el giroscopio con el botón
-      hotSpotDebug: false
-    });
-
-    // Doble clic / doble toque = acercar hacia donde apuntas
-    document.getElementById('pano').addEventListener('dblclick', function () {
-      viewer.setHfov(Math.max(viewer.getHfov() - 25, 50), 800);
-    });
-
-    // Aviso claro si la imagen no carga
-    viewer.on('error', function (e) {
-      document.getElementById('pano').innerHTML =
-        '<div style="color:#fff;padding:24px;font-size:15px">No se pudo cargar el panorama: ' + e + '</div>';
+    document.getElementById('pano').addEventListener('error', function () {
+      hint.style.opacity = '1';
+      hint.textContent = 'No se pudo cargar tallerres.png';
     });
   </script>
 </body>
